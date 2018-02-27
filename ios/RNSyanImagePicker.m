@@ -93,9 +93,12 @@ RCT_REMAP_METHOD(asyncShowImagePicker,
               NSString *filePath = [NSString stringWithFormat:@"%@/tmp/%@", NSHomeDirectory(), fileName];
               if ([UIImageJPEGRepresentation(photos[0], 0.9) writeToFile:filePath atomically:YES]) {
                   photo[@"uri"] = filePath;
+                  [self addSkipBackupAttributeToItemAtPath:filePath]; // Don't back up the file to iCloud
               } else {
                   NSLog(@"保存压缩图片失败");
               }
+
+
 
               [selectedPhotos addObject:photo];
 
@@ -111,11 +114,15 @@ RCT_REMAP_METHOD(asyncShowImagePicker,
                           NSString *documentsPath = [docPath objectAtIndex:0];
                 NSString *filePath = [NSString stringWithFormat:@"%@/%@", documentsPath, fileName];
 
+
                 if ([UIImageJPEGRepresentation(photos[idx], 0.9) writeToFile:filePath atomically:YES]) {
                     photo[@"uri"] = filePath;
+                    [self addSkipBackupAttributeToItemAtPath:filePath]; // Don't back up the file to iCloud
                 } else {
                     NSLog(@"保存压缩图片失败");
                 }
+
+
 
                 [selectedPhotos addObject:photo];
             }];
@@ -131,6 +138,32 @@ RCT_REMAP_METHOD(asyncShowImagePicker,
     }];
 
     [[self topViewController] presentViewController:imagePickerVc animated:YES completion:nil];
+}
+
+
+
+
+/**
+ *屏蔽ios文件不备份到icloud
+ */
+
+- (BOOL)addSkipBackupAttributeToItemAtPath:(NSString *) filePathString
+{
+    NSURL* URL= [NSURL fileURLWithPath: filePathString];
+    if ([[NSFileManager defaultManager] fileExistsAtPath: [URL path]]) {
+        NSError *error = nil;
+        BOOL success = [URL setResourceValue: [NSNumber numberWithBool: YES]
+                                      forKey: NSURLIsExcludedFromBackupKey error: &error];
+
+        if(!success){
+            NSLog(@"Error excluding %@ from backup %@", [URL lastPathComponent], error);
+        }
+        return success;
+    }
+    else {
+        NSLog(@"Error setting skip backup attribute: file not found");
+        return @NO;
+    }
 }
 
 - (void)invokeSuccessWithResult:(NSArray *)photos {
