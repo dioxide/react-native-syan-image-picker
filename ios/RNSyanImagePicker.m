@@ -77,18 +77,18 @@ RCT_REMAP_METHOD(asyncShowImagePicker,
             }
         }
     }
-  
+
     __block TZImagePickerController *weakPicker = imagePickerVc;
     [imagePickerVc setDidFinishPickingPhotosWithInfosHandle:^(NSArray<UIImage *> *photos,NSArray *assets,BOOL isSelectOriginalPhoto,NSArray<NSDictionary *> *infos) {
           NSMutableArray *selectedPhotos = [NSMutableArray array];
           [weakPicker showProgressHUD];
-      
+
           if (imageCount == 1 && isCrop) {
               NSMutableDictionary *photo = [NSMutableDictionary dictionary];
               // 剪切图片并放在tmp中
               photo[@"width"] = @(photos[0].size.width);
               photo[@"height"] = @(photos[0].size.height);
-            
+
               NSString *fileName = [NSString stringWithFormat:@"%d.jpg", arc4random() % 10000000];
               NSString *filePath = [NSString stringWithFormat:@"%@/tmp/%@", NSHomeDirectory(), fileName];
               if ([UIImageJPEGRepresentation(photos[0], 0.9) writeToFile:filePath atomically:YES]) {
@@ -96,7 +96,7 @@ RCT_REMAP_METHOD(asyncShowImagePicker,
               } else {
                   NSLog(@"保存压缩图片失败");
               }
-            
+
               [selectedPhotos addObject:photo];
 
         } else {
@@ -105,28 +105,31 @@ RCT_REMAP_METHOD(asyncShowImagePicker,
                 photo[@"width"] = @(photos[idx].size.width);
                 photo[@"height"] = @(photos[idx].size.height);
                 photo[@"original_uri"] = [(NSURL *)obj[@"PHImageFileURLKey"] absoluteString];
-              
+
                 NSString *fileName = [NSString stringWithFormat:@"%d.jpg", arc4random() % 10000000];
-                NSString *filePath = [NSString stringWithFormat:@"%@/tmp/%@", NSHomeDirectory(), fileName];
+                 NSArray *docPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask, YES);
+                          NSString *documentsPath = [docPath objectAtIndex:0];
+                NSString *filePath = [NSString stringWithFormat:@"%@/%@", documentsPath, fileName];
+
                 if ([UIImageJPEGRepresentation(photos[idx], 0.9) writeToFile:filePath atomically:YES]) {
                     photo[@"uri"] = filePath;
                 } else {
                     NSLog(@"保存压缩图片失败");
                 }
-              
+
                 [selectedPhotos addObject:photo];
             }];
         }
-      
+
         [self invokeSuccessWithResult:selectedPhotos];
-      
+
         [weakPicker hideProgressHUD];
     }];
-  
+
     [imagePickerVc setImagePickerControllerDidCancelHandle:^{
         [self invokeError];
     }];
-  
+
     [[self topViewController] presentViewController:imagePickerVc animated:YES completion:nil];
 }
 
